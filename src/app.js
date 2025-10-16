@@ -105,11 +105,11 @@ app.view('game_setup_modal', async ({ ack, body, view, client }) => {
         .filter(word => word.length > 0);
 
     // Validation
-    if (wordList.length < 30) {
+    if (wordList.length < 24) {
         await ack({
             response_action: 'errors',
             errors: {
-                wordlist_block: `Need at least 30 words. You provided ${wordList.length}.`
+                wordlist_block: `Need at least 24 words. You provided ${wordList.length}.`
             }
         });
         return;
@@ -118,9 +118,12 @@ app.view('game_setup_modal', async ({ ack, body, view, client }) => {
     await ack();
 
     try {
-        // Get channel ID from private_metadata
-        const metadata = JSON.parse(view.private_metadata || '{}');
-        const channelId = metadata.channelId || body.user.id;
+        // HARDCODED CHANNEL ID for hackathon
+        const channelId = 'C09LX2V8SLA';
+
+        // Get channel ID from private_metadata (disabled for now)
+        // const metadata = JSON.parse(view.private_metadata || '{}');
+        // const channelId = metadata.channelId || body.user.id;
 
         // Check if there's already an active game
         const existingGame = await dynamoService.getActiveGame();

@@ -12,7 +12,8 @@ const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const postSlackMessage = async (channel, message) => {
     const payload = JSON.stringify({
         channel,
-        ...message
+        text: message.text || 'New bingo call!',
+        blocks: message.blocks
     });
 
     return new Promise((resolve, reject) => {
@@ -21,9 +22,9 @@ const postSlackMessage = async (channel, message) => {
             path: '/api/chat.postMessage',
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json; charset=utf-8',
                 'Authorization': `Bearer ${SLACK_BOT_TOKEN}`,
-                'Content-Length': payload.length
+                'Content-Length': Buffer.byteLength(payload)
             }
         };
 
@@ -93,12 +94,17 @@ exports.handler = async (event) => {
         const updatedGame = await dynamoService.updateGameCallHistory(game.gameId, newWord);
 
         // Build and send message
-        const message = buildBingoCallMessage(newWord, updatedGame.callHistory.slice(0, -1));
+        // Get previous calls (all except the one we just added)
+        const previousCalls = updatedGame.callHistory.slice(0, -1);
+        const message = buildBingoCallMessage(newWord, previousCalls);
+
+        console.log(`Posting to channel ${game.channelId}: ${newWord}`);
+        console.log(`Previous calls: ${previousCalls.join(', ')}`);
 
         // Post to channel
-        await postSlackMessage(game.channelId, message);
+        const result = await postSlackMessage(game.channelId, message);
 
-        console.log(`Posted new call: ${newWord}`);
+        console.log(`Posted new call: ${newWord}`, result);
 
         return {
             statusCode: 200,

@@ -226,7 +226,7 @@ const buildGameSetupModal = () => {
                     multiline: true,
                     placeholder: {
                         type: 'plain_text',
-                        text: 'Enter at least 30 words or phrases, separated by commas'
+                        text: 'Enter at least 24 words or phrases, separated by commas'
                     }
                 },
                 label: {
@@ -235,7 +235,7 @@ const buildGameSetupModal = () => {
                 },
                 hint: {
                     type: 'plain_text',
-                    text: 'Comma-separated words/phrases (minimum 30 required)'
+                    text: 'Comma-separated words/phrases (minimum 24 required)'
                 }
             }
         ]
