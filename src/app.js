@@ -136,7 +136,7 @@ app.view('game_setup_modal', async ({ ack, body, view, client }) => {
         const gameId = uuidv4();
         const gameData = {
             gameId,
-            channelId: body.view.team_id, // We'll use team_id for now, ideally would be channel
+            channelId: channelId, // Using hardcoded channel ID
             wordList,
             frequency,
             startTime: new Date().toISOString()
