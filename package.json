@@ -1,0 +1,21 @@
+{
+    "name": "slack-bingo-bot",
+    "version": "1.0.0",
+    "description": "Slack Bingo game bot for team fun",
+    "main": "src/app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "slack",
+        "bingo",
+        "game"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@slack/bolt": "^3.17.1",
+        "aws-sdk": "^2.1498.0",
+        "uuid": "^9.0.1"
+    }
+}

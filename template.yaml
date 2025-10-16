@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Slack Bingo Bot - Serverless Application
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs18.x
+    Environment:
+      Variables:
+        GAMES_TABLE: !Ref GamesTable
+        USER_CARDS_TABLE: !Ref UserCardsTable
+        SLACK_BOT_TOKEN: !Ref SlackBotToken
+        SLACK_SIGNING_SECRET: !Ref SlackSigningSecret
+
+Parameters:
+  SlackBotToken:
+    Type: String
+    Description: Slack Bot User OAuth Token (xoxb-...)
+    NoEcho: true
+  
+  SlackSigningSecret:
+    Type: String
+    Description: Slack App Signing Secret
+    NoEcho: true
+
+Resources:
+  # DynamoDB Tables
+  GamesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: slack-bingo-games
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: gameId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: gameId
+          KeyType: HASH
+
+  UserCardsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: slack-bingo-user-cards
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: cardId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: cardId
+          KeyType: HASH
+
+  # Main Lambda Function (Slack Bolt App)
+  SlackBotFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: src/app.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GamesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserCardsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - events:PutRule
+                - events:DeleteRule
+                - events:EnableRule
+                - events:DisableRule
+                - events:PutTargets
+                - events:RemoveTargets
+              Resource: !GetAtt BingoScheduleRule.Arn
+      Events:
+        SlackEvents:
+          Type: Api
+          Properties:
+            Path: /slack/events
+            Method: post
+
+  # Scheduler Lambda Function
+  SchedulerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: src/scheduler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GamesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserCardsTable
+
+  # EventBridge Rule (initially disabled)
+  BingoScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: slack-bingo-scheduler
+      Description: Triggers bingo calls at configured intervals
+      # TODO: Is this configurable via slack interaction, or does it require a deploy to change?
+      ScheduleExpression: rate(15 minutes)
+      State: DISABLED
+      Targets:
+        - Arn: !GetAtt SchedulerFunction.Arn
+          Id: BingoSchedulerTarget
+
+  # Permission for EventBridge to invoke Scheduler Lambda
+  SchedulerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SchedulerFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt BingoScheduleRule.Arn
+
+Outputs:
+  SlackBotApiUrl:
+    Description: API Gateway endpoint URL for Slack events
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/slack/events"
+  
+  GamesTableName:
+    Description: DynamoDB Games Table Name
+    Value: !Ref GamesTable
+  
+  UserCardsTableName:
+    Description: DynamoDB User Cards Table Name
+    Value: !Ref UserCardsTable
+
