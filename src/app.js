@@ -41,6 +41,43 @@ app.command('/play-bingo', async ({ command, ack, client }) => {
     }
 });
 
+// Slash command: /stop-bingo
+app.command('/stop-bingo', async ({ command, ack, client }) => {
+    await ack();
+
+    try {
+        // Check if there's an active game
+        const game = await dynamoService.getActiveGame();
+
+        if (!game) {
+            await client.chat.postEphemeral({
+                channel: command.channel_id,
+                user: command.user_id,
+                text: '❌ No active game found. Nothing to stop!'
+            });
+            return;
+        }
+
+        // End the game
+        await dynamoService.completeGame(game.gameId, 'manual_stop');
+
+        // Post message to channel
+        await client.chat.postMessage({
+            channel: command.channel_id,
+            text: '🛑 Game stopped by <@' + command.user_id + '>. Start a new game with `/play-bingo`'
+        });
+
+        console.log(`Game ${game.gameId} stopped manually by user ${command.user_id}`);
+    } catch (error) {
+        console.error('Error stopping game:', error);
+        await client.chat.postEphemeral({
+            channel: command.channel_id,
+            user: command.user_id,
+            text: '❌ Error stopping game. Please try again.'
+        });
+    }
+});
+
 // Handle game setup modal submission
 app.view('game_setup_modal', async ({ ack, body, view, client }) => {
     // Validate inputs
