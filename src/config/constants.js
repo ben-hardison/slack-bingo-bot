@@ -97,7 +97,8 @@ const buildBingoCardModal = (card, stampedPositions, calledWords, hasBingo) => {
                 type: 'button',
                 text: {
                     type: 'plain_text',
-                    text: buttonText.length > 75 ? buttonText.substring(0, 72) + '...' : buttonText
+                    text: buttonText.length > 12 ? buttonText.substring(0, 10) + '..' : buttonText,
+                    emoji: true
                 },
                 action_id: `stamp_${row}_${col}`
             };
