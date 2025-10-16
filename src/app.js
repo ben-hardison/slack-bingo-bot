@@ -1,5 +1,6 @@
 const { App, AwsLambdaReceiver } = require('@slack/bolt');
 const { v4: uuidv4 } = require('uuid');
+const AWS = require('aws-sdk');
 const dynamoService = require('./services/dynamoService');
 const gameService = require('./services/gameService');
 const {
@@ -7,6 +8,9 @@ const {
     buildBingoCardModal,
     buildGameSetupModal
 } = require('./config/constants');
+
+// Initialize EventBridge client
+const eventBridge = new AWS.EventBridge();
 
 // Initialize AWS Lambda receiver
 const awsLambdaReceiver = new AwsLambdaReceiver({
@@ -60,6 +64,16 @@ app.command('/stop-bingo', async ({ command, ack, client }) => {
 
         // End the game
         await dynamoService.completeGame(game.gameId, 'manual_stop');
+
+        // Disable EventBridge rule to stop automated calls
+        try {
+            await eventBridge.disableRule({
+                Name: 'slack-bingo-scheduler'
+            }).promise();
+            console.log('EventBridge rule disabled');
+        } catch (error) {
+            console.error('Error disabling EventBridge rule:', error);
+        }
 
         // Post message to channel
         await client.chat.postMessage({
@@ -141,9 +155,16 @@ app.view('game_setup_modal', async ({ ack, body, view, client }) => {
             ...message
         });
 
-        // TODO: Enable EventBridge rule with the specified frequency
-        // This requires AWS SDK EventBridge client
-        // For now, we'll rely on the default 15-minute schedule
+        // Enable EventBridge rule for automated calls
+        try {
+            await eventBridge.enableRule({
+                Name: 'slack-bingo-scheduler'
+            }).promise();
+            console.log('EventBridge rule enabled for automated calls');
+        } catch (error) {
+            console.error('Error enabling EventBridge rule:', error);
+            // Don't fail the game start, just log the error
+        }
 
     } catch (error) {
         console.error('Error creating game:', error);
@@ -310,7 +331,17 @@ app.action('call_bingo', async ({ ack, body, client }) => {
         const result = await dynamoService.completeGame(game.gameId, userId);
 
         if (result.success) {
-            // User won! Post winner message to channel
+            // User won! Disable EventBridge rule to stop automated calls
+            try {
+                await eventBridge.disableRule({
+                    Name: 'slack-bingo-scheduler'
+                }).promise();
+                console.log('EventBridge rule disabled after game won');
+            } catch (error) {
+                console.error('Error disabling EventBridge rule:', error);
+            }
+
+            // Post winner message to channel
             const winnerMessage = {
                 blocks: [
                     {

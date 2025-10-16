@@ -200,10 +200,9 @@ const buildGameSetupModal = () => {
                 element: {
                     type: 'number_input',
                     action_id: 'frequency_input',
-                    // TODO: Change this to allow seconds, or partial minutes.
                     is_decimal_allowed: true,
-                    min_value: '0.1',
-                    initial_value: '0.33',
+                    min_value: '1',
+                    initial_value: '1',
                     placeholder: {
                         type: 'plain_text',
                         text: 'Enter frequency'
