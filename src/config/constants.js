@@ -1,21 +1,14 @@
 // Block Kit templates and constants
 
-const GREETINGS = [
-    "Sup gamers! 🎉",
-    "Hey team! Ready to put it all on red? 🎲 🎰",
-    "Bingo time! 🎊",
-    "New call alert! 🔔",
-    "Let's play! 🎮"
-];
-
-const getRandomGreeting = () => {
-    return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-};
-
-const buildBingoCallMessage = (word, previousCalls) => {
+const buildBingoCallMessage = (word, previousCalls, isFirstCall = false) => {
     const previousCallsText = previousCalls.length > 0
         ? previousCalls.join(', ')
         : 'None yet';
+
+    // First message has special greeting
+    const messageText = isFirstCall
+        ? `Sup, gamerz! It's bingo time! ⚽🎾🏀🏓\n\nYour word is: *${word}*`
+        : `Your word is: *${word}*`;
 
     return {
         blocks: [
@@ -23,7 +16,7 @@ const buildBingoCallMessage = (word, previousCalls) => {
                 type: 'section',
                 text: {
                     type: 'mrkdwn',
-                    text: `${getRandomGreeting()}\nYour bingo word is: *${word}*`
+                    text: messageText
                 }
             },
             {
@@ -245,7 +238,6 @@ const buildGameSetupModal = () => {
 module.exports = {
     buildBingoCallMessage,
     buildBingoCardModal,
-    buildGameSetupModal,
-    getRandomGreeting
+    buildGameSetupModal
 };
 

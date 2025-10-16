@@ -146,7 +146,7 @@ app.view('game_setup_modal', async ({ ack, body, view, client }) => {
 
         // Make first call immediately
         const firstWord = gameService.getRandomWord(wordList);
-        const message = buildBingoCallMessage(firstWord, []);
+        const message = buildBingoCallMessage(firstWord, [], true); // true = isFirstCall
 
         // Update game with first call
         await dynamoService.updateGameCallHistory(gameId, firstWord);
@@ -351,7 +351,7 @@ app.action('call_bingo', async ({ ack, body, client }) => {
                         type: 'section',
                         text: {
                             type: 'mrkdwn',
-                            text: `🎊 *GAME OVER!* 🎊\n\n<@${userId}> has won Bingo! 👑`
+                            text: `🚨GAME OVER, GAMERZ! 🚨\n\nYour 👑Bingo King 👑 is <@${userId}> 🥳\n\nUntil next time ⚽🎾🏀🏓`
                         }
                     }
                 ]

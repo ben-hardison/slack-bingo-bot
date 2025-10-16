@@ -97,8 +97,7 @@ Resources:
     Properties:
       Name: slack-bingo-scheduler
       Description: Triggers bingo calls at configured intervals
-      # TODO: Is this configurable via slack interaction, or does it require a deploy to change?
-      ScheduleExpression: rate(15 minutes)
+      ScheduleExpression: rate(1 minute)
       State: DISABLED
       Targets:
         - Arn: !GetAtt SchedulerFunction.Arn
