@@ -351,7 +351,7 @@ app.action('call_bingo', async ({ ack, body, client }) => {
                         type: 'section',
                         text: {
                             type: 'mrkdwn',
-                            text: `🚨GAME OVER, GAMERZ! 🚨\n\nYour 👑Bingo King 👑 is <@${userId}> 🥳\n\nUntil next time ⚽🎾🏀🏓`
+                            text: `🚨GAME OVER, GAMERZ! 🚨\n\nYour 👑 Bingo King 👑 is <@${userId}> 🥳\n\nUntil next time ⚽🎾🏀🏓`
                         }
                     }
                 ]
