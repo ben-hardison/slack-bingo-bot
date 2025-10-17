@@ -44,6 +44,166 @@ const buildBingoCallMessage = (word, previousCalls, isFirstCall = false) => {
     };
 };
 
+const buildBingoCardMessage = (card, stampedPositions, calledWords, hasBingo) => {
+    const blocks = [
+        {
+            type: 'header',
+            text: {
+                type: 'plain_text',
+                text: '🎉 Your Bingo Card 🎉'
+            }
+        }
+    ];
+
+    // Build table rows for visual display
+    const tableRows = [];
+    for (let row = 0; row < 5; row++) {
+        const rowCells = [];
+        for (let col = 0; col < 5; col++) {
+            const index = row * 5 + col;
+            const word = card[index];
+            const isStamped = stampedPositions.includes(index);
+            const isCalled = calledWords.includes(word) || word === 'FREE SPACE';
+            const isFree = row === 2 && col === 2;
+
+            let cellText = word;
+
+            if (isFree) {
+                cellText = '⭐ FREE ⭐';
+            } else if (isStamped) {
+                cellText = `✅ ${word}`;
+            } else if (isCalled) {
+                cellText = `🔵 ${word}`;
+            } else {
+                cellText = `⚪ ${word}`;
+            }
+
+            rowCells.push({
+                type: 'raw_text',
+                text: cellText
+            });
+        }
+        tableRows.push(rowCells);
+    }
+
+    // Add table block
+    blocks.push({
+        type: 'table',
+        rows: tableRows
+    });
+
+    // Add legend
+    blocks.push({
+        type: 'context',
+        elements: [
+            {
+                type: 'mrkdwn',
+                text: '⚪ Not called  •  🔵 Called (tap below)  •  ✅ Stamped  •  ⭐ FREE'
+            }
+        ]
+    });
+
+    blocks.push({ type: 'divider' });
+
+    // Build interactive buttons (only for called, unstamped words)
+    const availableButtons = [];
+    for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 5; col++) {
+            const index = row * 5 + col;
+            const word = card[index];
+            const isStamped = stampedPositions.includes(index);
+            const isCalled = calledWords.includes(word) || word === 'FREE SPACE';
+            const isFree = row === 2 && col === 2;
+
+            // Only show buttons for called words that aren't stamped yet (and not FREE)
+            if (isCalled && !isStamped && !isFree) {
+                availableButtons.push({
+                    type: 'button',
+                    text: {
+                        type: 'plain_text',
+                        text: word,
+                        emoji: true
+                    },
+                    action_id: `stamp_${row}_${col}`,
+                    style: 'primary'
+                });
+            }
+        }
+    }
+
+    // Add buttons in groups of 5 (action blocks have max 5 elements)
+    if (availableButtons.length > 0) {
+        blocks.push({
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text: '*Tap to stamp:*'
+            }
+        });
+
+        for (let i = 0; i < availableButtons.length; i += 5) {
+            const buttonGroup = availableButtons.slice(i, i + 5);
+            blocks.push({
+                type: 'actions',
+                elements: buttonGroup
+            });
+        }
+    } else {
+        blocks.push({
+            type: 'context',
+            elements: [
+                {
+                    type: 'mrkdwn',
+                    text: '_No words available to stamp right now. Wait for more calls!_'
+                }
+            ]
+        });
+    }
+
+    blocks.push({ type: 'divider' });
+
+    // Add BINGO button
+    blocks.push({
+        type: 'actions',
+        elements: [
+            {
+                type: 'button',
+                text: {
+                    type: 'plain_text',
+                    text: hasBingo ? '🎊 BINGO! 🎊' : 'BINGO!'
+                },
+                action_id: 'call_bingo',
+                style: hasBingo ? 'primary' : undefined
+            }
+        ]
+    });
+
+    // Add helper text
+    if (!hasBingo) {
+        blocks.push({
+            type: 'context',
+            elements: [
+                {
+                    type: 'mrkdwn',
+                    text: '_Click on called words to stamp them. Get 5 in a row to win!_'
+                }
+            ]
+        });
+    } else {
+        blocks.push({
+            type: 'context',
+            elements: [
+                {
+                    type: 'mrkdwn',
+                    text: '*You have BINGO! Click the button above to claim victory! 👑*'
+                }
+            ]
+        });
+    }
+
+    return { blocks };
+};
+
 const buildBingoCardModal = (card, stampedPositions, calledWords, hasBingo) => {
     const blocks = [
         {
@@ -66,31 +226,31 @@ const buildBingoCardModal = (card, stampedPositions, calledWords, hasBingo) => {
             const isCalled = calledWords.includes(word) || word === 'FREE SPACE';
             const isFree = row === 2 && col === 2;
 
-            let buttonStyle = undefined;
             let buttonText = word;
-            let disabled = false;
+            let buttonStyle = undefined;
 
             if (isFree) {
                 // FREE space - always stamped
+                buttonText = '⭐';
                 buttonStyle = 'danger';
-                buttonText = '⭐ FREE ⭐';
             } else if (isStamped) {
                 // Stamped by user
+                buttonText = '✅';
                 buttonStyle = 'danger';
-                buttonText = `✓ ${word}`;
             } else if (isCalled) {
                 // Called but not stamped
+                buttonText = word.substring(0, 4);
                 buttonStyle = 'primary';
             } else {
-                // Not called yet - disabled
-                disabled = true;
+                // Not called yet
+                buttonText = '⚪';
             }
 
             const button = {
                 type: 'button',
                 text: {
                     type: 'plain_text',
-                    text: buttonText.length > 12 ? buttonText.substring(0, 10) + '..' : buttonText,
+                    text: buttonText,
                     emoji: true
                 },
                 action_id: `stamp_${row}_${col}`
@@ -99,9 +259,6 @@ const buildBingoCardModal = (card, stampedPositions, calledWords, hasBingo) => {
             if (buttonStyle) {
                 button.style = buttonStyle;
             }
-
-            // Note: Block Kit doesn't support disabled buttons directly
-            // We'll handle this in the action handler by checking if word is called
 
             rowElements.push(button);
         }
@@ -237,6 +394,7 @@ const buildGameSetupModal = () => {
 
 module.exports = {
     buildBingoCallMessage,
+    buildBingoCardMessage,
     buildBingoCardModal,
     buildGameSetupModal
 };

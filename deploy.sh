@@ -69,12 +69,4 @@ fi
 echo ""
 echo "✅ Deployment complete!"
 echo ""
-echo "📝 Next steps:"
-echo "   1. Copy the SlackBotApiUrl from above"
-echo "   2. Go to https://api.slack.com/apps"
-echo "   3. Update your Slash Command URL"
-echo "   4. Update your Interactivity Request URL"
-echo "   5. Test with: /play-bingo"
-echo ""
-echo "🎉 Good luck with your hackathon!"
 

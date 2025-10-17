@@ -5,6 +5,7 @@ const dynamoService = require('./services/dynamoService');
 const gameService = require('./services/gameService');
 const {
     buildBingoCallMessage,
+    buildBingoCardMessage,
     buildBingoCardModal,
     buildGameSetupModal
 } = require('./config/constants');
@@ -212,17 +213,24 @@ app.action('open_card_modal', async ({ ack, body, client }) => {
         // Check if user has bingo
         const hasBingo = gameService.checkBingo(userCard.stampedPositions);
 
-        // Build and show modal
-        const modal = buildBingoCardModal(
+        // Build and post ephemeral message with table
+        const message = buildBingoCardMessage(
             userCard.card,
             userCard.stampedPositions,
             game.callHistory,
             hasBingo
         );
 
-        await client.views.open({
-            trigger_id: body.trigger_id,
-            view: modal
+        // Table blocks must be in attachments, not top-level blocks
+        await client.chat.postEphemeral({
+            channel: body.channel.id,
+            user: userId,
+            text: 'Your Bingo Card',
+            attachments: [
+                {
+                    blocks: message.blocks
+                }
+            ]
         });
 
     } catch (error) {
@@ -278,17 +286,24 @@ app.action(/^stamp_\d+_\d+$/, async ({ ack, body, action, client }) => {
         // Check for bingo
         const hasBingo = gameService.checkBingo(newStamps);
 
-        // Update modal
-        const modal = buildBingoCardModal(
+        // Post new ephemeral message with updated card
+        const message = buildBingoCardMessage(
             userCard.card,
             newStamps,
             game.callHistory,
             hasBingo
         );
 
-        await client.views.update({
-            view_id: body.view.id,
-            view: modal
+        // Table blocks must be in attachments, not top-level blocks
+        await client.chat.postEphemeral({
+            channel: body.channel.id,
+            user: userId,
+            text: 'Your Bingo Card (Updated)',
+            attachments: [
+                {
+                    blocks: message.blocks
+                }
+            ]
         });
 
     } catch (error) {
