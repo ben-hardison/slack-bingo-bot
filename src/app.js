@@ -222,13 +222,16 @@ app.action('open_card_modal', async ({ ack, body, client }) => {
         );
 
         // Table blocks must be in attachments, not top-level blocks
+        // Try to prevent "See more" button by keeping content minimal
         await client.chat.postEphemeral({
             channel: body.channel.id,
             user: userId,
             text: 'Your Bingo Card',
             attachments: [
                 {
-                    blocks: message.blocks
+                    color: '#36a64f',
+                    blocks: message.blocks,
+                    fallback: 'Your Bingo Card'
                 }
             ]
         });
@@ -295,13 +298,16 @@ app.action(/^stamp_\d+_\d+$/, async ({ ack, body, action, client }) => {
         );
 
         // Table blocks must be in attachments, not top-level blocks
+        // Try to prevent "See more" button by keeping content minimal
         await client.chat.postEphemeral({
             channel: body.channel.id,
             user: userId,
             text: 'Your Bingo Card (Updated)',
             attachments: [
                 {
-                    blocks: message.blocks
+                    color: '#36a64f',
+                    blocks: message.blocks,
+                    fallback: 'Your Bingo Card'
                 }
             ]
         });

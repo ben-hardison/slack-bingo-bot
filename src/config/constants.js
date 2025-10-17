@@ -7,8 +7,8 @@ const buildBingoCallMessage = (word, previousCalls, isFirstCall = false) => {
 
     // First message has special greeting
     const messageText = isFirstCall
-        ? `Sup, gamerz! It's bingo time! ⚽🎾🏀🏓\n\nYour word is: *${word}*`
-        : `Your word is: *${word}*`;
+        ? `Sup, gamerz! It's bingo time! ⚽🎾🏀🏓\n\The word is: *${word}*`
+        : `The word is: *${word}*`;
 
     return {
         blocks: [
@@ -45,15 +45,7 @@ const buildBingoCallMessage = (word, previousCalls, isFirstCall = false) => {
 };
 
 const buildBingoCardMessage = (card, stampedPositions, calledWords, hasBingo) => {
-    const blocks = [
-        {
-            type: 'header',
-            text: {
-                type: 'plain_text',
-                text: '🎉 Your Bingo Card 🎉'
-            }
-        }
-    ];
+    const blocks = [];
 
     // Build table rows for visual display
     const tableRows = [];
@@ -86,7 +78,7 @@ const buildBingoCardMessage = (card, stampedPositions, calledWords, hasBingo) =>
         tableRows.push(rowCells);
     }
 
-    // Add table block
+    // Add table block (this is the main content)
     blocks.push({
         type: 'table',
         rows: tableRows
@@ -98,12 +90,10 @@ const buildBingoCardMessage = (card, stampedPositions, calledWords, hasBingo) =>
         elements: [
             {
                 type: 'mrkdwn',
-                text: '⚪ Not called  •  🔵 Called (tap below)  •  ✅ Stamped  •  ⭐ FREE'
+                text: '⚪ Not called  •  🔵 Called  •  ✅ Stamped  •  ⭐ FREE'
             }
         ]
     });
-
-    blocks.push({ type: 'divider' });
 
     // Build interactive buttons (only for called, unstamped words)
     const availableButtons = [];
@@ -131,73 +121,29 @@ const buildBingoCardMessage = (card, stampedPositions, calledWords, hasBingo) =>
         }
     }
 
-    // Add buttons in groups of 5 (action blocks have max 5 elements)
-    if (availableButtons.length > 0) {
-        blocks.push({
-            type: 'section',
+    // Add BINGO button with available stamp buttons if any
+    const actionElements = [];
+    if (hasBingo) {
+        actionElements.push({
+            type: 'button',
             text: {
-                type: 'mrkdwn',
-                text: '*Tap to stamp:*'
-            }
-        });
-
-        for (let i = 0; i < availableButtons.length; i += 5) {
-            const buttonGroup = availableButtons.slice(i, i + 5);
-            blocks.push({
-                type: 'actions',
-                elements: buttonGroup
-            });
-        }
-    } else {
-        blocks.push({
-            type: 'context',
-            elements: [
-                {
-                    type: 'mrkdwn',
-                    text: '_No words available to stamp right now. Wait for more calls!_'
-                }
-            ]
+                type: 'plain_text',
+                text: '🎊 BINGO! 🎊'
+            },
+            action_id: 'call_bingo',
+            style: 'primary'
         });
     }
 
-    blocks.push({ type: 'divider' });
+    // Add up to 4 stamp buttons in the same row as BINGO
+    for (let i = 0; i < Math.min(availableButtons.length, hasBingo ? 4 : 5); i++) {
+        actionElements.push(availableButtons[i]);
+    }
 
-    // Add BINGO button
-    blocks.push({
-        type: 'actions',
-        elements: [
-            {
-                type: 'button',
-                text: {
-                    type: 'plain_text',
-                    text: hasBingo ? '🎊 BINGO! 🎊' : 'BINGO!'
-                },
-                action_id: 'call_bingo',
-                style: hasBingo ? 'primary' : undefined
-            }
-        ]
-    });
-
-    // Add helper text
-    if (!hasBingo) {
+    if (actionElements.length > 0) {
         blocks.push({
-            type: 'context',
-            elements: [
-                {
-                    type: 'mrkdwn',
-                    text: '_Click on called words to stamp them. Get 5 in a row to win!_'
-                }
-            ]
-        });
-    } else {
-        blocks.push({
-            type: 'context',
-            elements: [
-                {
-                    type: 'mrkdwn',
-                    text: '*You have BINGO! Click the button above to claim victory! 👑*'
-                }
-            ]
+            type: 'actions',
+            elements: actionElements
         });
     }
 
